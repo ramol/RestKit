@@ -34,7 +34,7 @@ RK_FIX_CATEGORY_BUG(UIApplication_RKNetworkActivity)
 // Constants
 static NSMutableArray *RKRequestQueueInstances = nil;
 
-static const NSTimeInterval kFlushDelay = 0.3;
+static const NSTimeInterval kFlushDelay = 1.0;
 
 // Set Logging Component
 #undef RKLogComponent

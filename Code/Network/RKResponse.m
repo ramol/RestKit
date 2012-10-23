@@ -206,11 +206,24 @@ return __VA_ARGS__;                                                             
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
 {
     RKResponseIgnoreDelegateIfCancelled();
-    [_body appendData:data];
-    [_request invalidateTimeoutTimer];
-    if ([[_request delegate] respondsToSelector:@selector(request:didReceiveData:totalBytesReceived:totalBytesExpectedToReceive:)]) {
-        [[_request delegate] request:_request didReceiveData:[data length] totalBytesReceived:[_body length] totalBytesExpectedToReceive:_httpURLResponse.expectedContentLength];
+//    [_body appendData:data];
+//    [_request invalidateTimeoutTimer];
+//    if ([[_request delegate] respondsToSelector:@selector(request:didReceiveData:totalBytesReceived:totalBytesExpectedToReceive:)]) {
+//        [[_request delegate] request:_request didReceiveData:[data length] totalBytesReceived:[_body length] totalBytesExpectedToReceive:_httpURLResponse.expectedContentLength];
+//    }
+    if ([_request dontKeepBytesInMemory]) {
+        if ([[_request delegate] respondsToSelector:@selector(request:didReceiveData:totalBytesExpectedToReceive:)]) {
+            [[_request delegate] request:_request didReceiveData:data totalBytesExpectedToReceive:_httpURLResponse.expectedContentLength];
+        }
+    } else {
+        [_body appendData:data];
+        if ([[_request delegate] respondsToSelector:@selector(request:didReceiveData:totalBytesReceived:totalBytesExpectedToReceive:)]) {
+            [[_request delegate] request:_request didReceiveData:[data length] totalBytesReceived:[_body length] totalBytesExpectedToReceive:_httpURLResponse.expectedContentLength];
+        }
     }
+    [_request invalidateTimeoutTimer];
+    [_request didReceiveData:self data:data];
+    
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSHTTPURLResponse *)response
@@ -257,6 +270,7 @@ return __VA_ARGS__;                                                             
 {
     RKResponseIgnoreDelegateIfCancelled();
     [_request invalidateTimeoutTimer];
+    [_request createTimeoutTimer];
 
     if ([[_request delegate] respondsToSelector:@selector(request:didSendBodyData:totalBytesWritten:totalBytesExpectedToWrite:)]) {
         [[_request delegate] request:_request didSendBodyData:bytesWritten totalBytesWritten:totalBytesWritten totalBytesExpectedToWrite:totalBytesExpectedToWrite];

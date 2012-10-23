@@ -121,9 +121,11 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
 @synthesize configurationDelegate = _configurationDelegate;
 @synthesize onDidLoadResponse;
 @synthesize onDidFailLoadWithError;
+@synthesize onDidReceiveData;
 @synthesize additionalRootCertificates = _additionalRootCertificates;
 @synthesize disableCertificateValidation = _disableCertificateValidation;
 @synthesize followRedirect = _followRedirect;
+@synthesize dontKeepBytesInMemory = _dontKeepBytesInMemory;
 @synthesize runLoopMode = _runLoopMode;
 @synthesize loaded = _loaded;
 @synthesize loading = _loading;
@@ -152,6 +154,7 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
         _timeoutInterval = 120.0;
         _defaultHTTPEncoding = NSUTF8StringEncoding;
         _followRedirect = YES;
+        _dontKeepBytesInMemory = NO;
     }
     return self;
 }
@@ -213,7 +216,8 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
     self.delegate = nil;
     if (_onDidLoadResponse) Block_release(_onDidLoadResponse);
     if (_onDidFailLoadWithError) Block_release(_onDidFailLoadWithError);
-
+    if (_onDidReceiveData) Block_release(_onDidReceiveData);
+    
     _delegate = nil;
     _configurationDelegate = nil;
     [_reachabilityObserver release];
@@ -255,6 +259,8 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
     onDidFailLoadWithError = nil;
     [onDidLoadResponse release];
     onDidLoadResponse = nil;
+    [onDidReceiveData release];
+    onDidReceiveData = nil;
     [self invalidateTimeoutTimer];
     [_timeoutTimer release];
     _timeoutTimer = nil;
@@ -376,9 +382,14 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
 
     if (self.cachePolicy & RKRequestCachePolicyEtag) {
         NSString *etag = [self.cache etagForRequest:self];
+        NSString *lastModified = [self.cache lastModifiedForRequest:self];
         if (etag) {
             RKLogTrace(@"Setting If-None-Match header to '%@'", etag);
             [_URLRequest setValue:etag forHTTPHeaderField:@"If-None-Match"];
+        }
+        if (lastModified) {
+            RKLogTrace(@"Setting If-Modified-Since header to '%@'", lastModified);
+            [_URLRequest setValue:lastModified forHTTPHeaderField:@"If-Modified-Since"];
         }
     }
 }
@@ -405,6 +416,7 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
 - (void)cancelAndInformDelegate:(BOOL)informDelegate
 {
     self.cancelled = YES;
+    [_connection unscheduleFromRunLoop:[NSRunLoop currentRunLoop] forMode:self.runLoopMode];
     [_connection cancel];
     [_connection release];
     _connection = nil;
@@ -721,6 +733,13 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
     // NOTE: This notification must be posted last as the request queue releases the request when it
     // receives the notification
     [[NSNotificationCenter defaultCenter] postNotificationName:RKRequestDidFinishLoadingNotification object:self];
+}
+
+- (void)didReceiveData:(RKResponse *)response data:(NSData *)data {
+    
+    if (self.onDidReceiveData) {
+        self.onDidReceiveData(response, data);
+    }
 }
 
 - (BOOL)isGET

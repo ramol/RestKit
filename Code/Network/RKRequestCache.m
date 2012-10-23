@@ -187,6 +187,24 @@ static NSDateFormatter *__rfc1123DateFormatter;
     return etag;
 }
 
+- (NSString *)lastModifiedForRequest:(RKRequest *)request
+{
+    NSString *lastModified = nil;
+    
+    NSDictionary *responseHeaders = [self headersForRequest:request];
+    if (responseHeaders) {
+        for (NSString *responseHeader in responseHeaders) {
+            if ([[responseHeader uppercaseString] isEqualToString:[@"Last-Modified" uppercaseString]]) {
+                lastModified = [responseHeaders objectForKey:responseHeader];
+            }
+        }
+    }
+    RKLogDebug(@"Found cached Last-Modified '%@' for '%@'", lastModified, request);
+    return lastModified;
+}
+
+
+
 - (void)setCacheDate:(NSDate *)date forRequest:(RKRequest *)request
 {
     NSString *cacheKey = [self pathForRequest:request];

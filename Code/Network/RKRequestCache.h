@@ -150,11 +150,19 @@ extern NSString * const RKRequestCacheURLHeadersKey;
 
 /**
  Returns an ETag for a request if it is stored in the cached headers.
-
+ 
  @param request The request that an ETag is to be determined for.
  @return A string of the ETag value stored for the specified request.
  */
 - (NSString *)etagForRequest:(RKRequest *)request;
+
+/**
+ Returns an Last-Modified for a request if it is stored in the cached headers.
+ 
+ @param request The request that an Last-Modified is to be determined for.
+ @return A string of the Last-Modified value stored for the specified request.
+ */
+- (NSString *)lastModifiedForRequest:(RKRequest *)request;
 
 /**
  Returns the date of the cached request.

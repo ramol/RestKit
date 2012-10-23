@@ -416,7 +416,7 @@
         if (self.onDidFailLoadWithError) {
             self.onDidFailLoadWithError(error);
         }
-
+                
         // If we failed due to a transport error or before we have a response, the request itself failed
         if (!self.response || [self.response isFailure]) {
             NSDictionary *userInfo = [NSDictionary dictionaryWithObject:error forKey:RKRequestDidFailWithErrorNotificationUserInfoErrorKey];
@@ -427,6 +427,10 @@
 
         if (! self.isCancelled) {
             [self informDelegateOfError:error];
+        } else {
+            if (self.onDidFailWithError) {
+                self.onDidFailWithError(error);
+            }            
         }
 
         [self finalizeLoad:NO];
@@ -450,7 +454,7 @@
     if (![self.response wasLoadedFromCache] && [self.response isSuccessful] && (_cachePolicy != RKRequestCachePolicyNone)) {
         [self.cache storeResponse:self.response forRequest:self];
     }
-
+    
     if ([_delegate respondsToSelector:@selector(request:didLoadResponse:)]) {
         [_delegate request:self didLoadResponse:self.response];
     }
@@ -466,6 +470,13 @@
                                                         object:self
                                                       userInfo:userInfo];
 
+    if ([self.response wasLoadedFromCache] && [self.response isSuccessful] && (_cachePolicy != RKRequestCachePolicyNone)) {
+        if (self.onDidLoadObjects) {
+            self.onDidLoadObjects(nil);
+        }
+        return;
+    }
+    
     if ([self isResponseMappable]) {
         // Determine if we are synchronous here or not.
         if (_sentSynchronously) {

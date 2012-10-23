@@ -154,6 +154,7 @@ typedef enum {
 ///-----------------------------------------------------------------------------
 typedef void(^RKRequestDidLoadResponseBlock)(RKResponse *response);
 typedef void(^RKRequestDidFailLoadWithErrorBlock)(NSError *error);
+typedef void(^RKRequestDidReceiveDataBlock)(RKResponse *response, NSData *data);
 
 /**
  Models the request portion of an HTTP request/response cycle.
@@ -167,6 +168,7 @@ typedef void(^RKRequestDidFailLoadWithErrorBlock)(NSError *error);
 
     RKRequestDidLoadResponseBlock _onDidLoadResponse;
     RKRequestDidFailLoadWithErrorBlock _onDidFailLoadWithError;
+    RKRequestDidReceiveDataBlock _onDidReceiveData;    
 }
 
 ///-----------------------------------------------------------------------------
@@ -354,11 +356,25 @@ typedef void(^RKRequestDidFailLoadWithErrorBlock)(NSError *error);
 @property (nonatomic, copy) RKRequestDidFailLoadWithErrorBlock onDidFailLoadWithError;
 
 /**
+ A block to invoke when the receive partial data (for large files)
+ 
+ @see [RKRequestDelegate request:didLoadResponse:]
+ */
+@property (nonatomic, copy) RKRequestDidReceiveDataBlock onDidReceiveData;
+
+/**
  Whether this request should follow server redirects or not.
 
  @default YES
  */
 @property (nonatomic, assign) BOOL followRedirect;
+
+/**
+ If you want download large file and dont use memory
+ 
+ @default NO
+ */
+@property (nonatomic, assign) BOOL dontKeepBytesInMemory;
 
 #if TARGET_OS_IPHONE
 ///-----------------------------------------------------------------------------
@@ -670,6 +686,14 @@ typedef void(^RKRequestDidFailLoadWithErrorBlock)(NSError *error);
  */
 - (void)didFinishLoad:(RKResponse *)response;
 
+/**
+ Callback performed to notify the request that the underlying NSURLConnection
+ has received partial data (large files).
+ 
+ @param response An RKResponse object with the result of the request.
+ @param response NSData
+ */
+- (void)didReceiveData:(RKResponse *)response data:(NSData *)data;
 
 ///-----------------------------------------------------------------------------
 /// @name Timing Out the Request
@@ -829,6 +853,16 @@ typedef void(^RKRequestDidFailLoadWithErrorBlock)(NSError *error);
  */
 - (void)request:(RKRequest *)request didReceiveData:(NSInteger)bytesReceived totalBytesReceived:(NSInteger)totalBytesReceived totalBytesExpectedToReceive:(NSInteger)totalBytesExpectedToReceive;
 
+/**
+ Sent when request has received data from remote site if dontKeepBytesInMemory is set
+ 
+ @param request The RKRequest object that is handling the loading.
+ @param data An NSData the chunk just received from
+ the remote site.
+ @param totalBytesExpectedToReceive An integer of the total bytes that will be
+ received from the remote site.
+ */
+- (void)request:(RKRequest *)request didReceiveData:(NSData *)data totalBytesExpectedToReceive:(NSInteger)totalBytesExpectedToReceive;
 
 ///-----------------------------------------------------------------------------
 /// @name Handling Successful Requests
