@@ -200,7 +200,8 @@
     // in these cases
     id bodyAsString = [self.response bodyAsString];
     RKLogTrace(@"bodyAsString: %@", bodyAsString);
-    if (bodyAsString == nil || [[bodyAsString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] length] == 0) {
+    if (bodyAsString == nil || [[bodyAsString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] length] == 0)
+    {
         RKLogDebug(@"Mapping attempted on empty response body...");
         if (self.targetObject) {
             return [RKObjectMappingResult mappingResultWithDictionary:[NSDictionary dictionaryWithObject:self.targetObject forKey:@""]];
@@ -354,7 +355,11 @@
     // target object
     NSError *error = nil;
     RKObjectMappingResult *result = [self mapResponseWithMappingProvider:self.mappingProvider toObject:nil inContext:RKObjectMappingProviderContextErrors error:&error];
-    if (result) {
+    if ([self.response statusCode] == 403)
+    {
+        error = [NSError errorWithDomain:RKErrorDomain code:RKObjectMapperErrorValidationFailure userInfo:@{@"code": @403, @"message": @"forbidden"}];
+    }
+    else if (result) {
         error = [result asError];
     } else {
         RKLogError(@"Encountered an error while attempting to map server side errors from payload: %@", [error localizedDescription]);
@@ -474,21 +479,24 @@
         if (self.onDidLoadObjects) {
             self.onDidLoadObjects(nil);
         }
-        return;
-    }
-    
-    if ([self isResponseMappable]) {
-        // Determine if we are synchronous here or not.
-        if (_sentSynchronously) {
-            NSError *error = nil;
-            _result = [[self performMapping:&error] retain];
-            if (self.result) {
-                [self processMappingResult:self.result];
+        
+        [self finalizeLoad:YES];
+        
+    } else {
+        
+        if ([self isResponseMappable]) {
+            // Determine if we are synchronous here or not.
+            if (_sentSynchronously) {
+                NSError *error = nil;
+                _result = [[self performMapping:&error] retain];
+                if (self.result) {
+                    [self processMappingResult:self.result];
+                } else {
+                    [self performSelectorInBackground:@selector(didFailLoadWithError:) withObject:error];
+                }
             } else {
-                [self performSelectorInBackground:@selector(didFailLoadWithError:) withObject:error];
+                [self performMappingInDispatchQueue];
             }
-        } else {
-            [self performMappingInDispatchQueue];
         }
     }
 }
