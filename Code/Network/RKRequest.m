@@ -426,6 +426,18 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
     if (informDelegate && [_delegate respondsToSelector:@selector(requestDidCancelLoad:)]) {
         [_delegate requestDidCancelLoad:self];
     }
+    if (informDelegate) {
+        
+        NSString *errorMessage = [NSString stringWithFormat:@"Cancel request resource at %@", [[self URL] absoluteString]];
+        NSDictionary *userInfo = [NSDictionary dictionaryWithObjectsAndKeys:
+                                  errorMessage, NSLocalizedDescriptionKey,
+                                  nil];
+        NSError *error = [NSError errorWithDomain:RKErrorDomain code:RKRequestBaseURLOfflineError userInfo:userInfo];
+        
+        if (self.onDidFailLoadWithError) {
+            self.onDidFailLoadWithError(error);
+        }
+    }
 }
 
 - (NSString *)HTTPMethod
