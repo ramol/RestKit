@@ -475,7 +475,7 @@
                                                         object:self
                                                       userInfo:userInfo];
 
-    if ([self.response wasLoadedFromCache] && [self.response isSuccessful] && (_cachePolicy != RKRequestCachePolicyNone)) {
+    if ([self.response wasLoadedFromCache] && [self.response isSuccessful] && (_cachePolicy != RKRequestCachePolicyNone) && (_cachePolicy != RKRequestCachePolicyEtag)) {
         if (self.onDidLoadObjects) {
             self.onDidLoadObjects(nil);
         }
