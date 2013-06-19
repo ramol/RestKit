@@ -731,7 +731,7 @@ RKRequestMethod RKRequestMethodTypeFromName(NSString *methodName) {
     if (self.onDidLoadResponse) {
         self.onDidLoadResponse(self.response);
     }
-
+    
     if ([response isServiceUnavailable]) {
         [[NSNotificationCenter defaultCenter] postNotificationName:RKServiceDidBecomeUnavailableNotification object:self];
     }
